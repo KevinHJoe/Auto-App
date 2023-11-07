@@ -33,4 +33,4 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 ;;once each script runs
 ;;that script will finish by reopening this gui
-;;then you are able to run the other gui's without having to rerunning this script
+;;then you are able to run the other scripts without having to rerunning this script
