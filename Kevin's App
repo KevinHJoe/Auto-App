@@ -1,0 +1,36 @@
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+
+;Menu, Tray, Icon, C:\WINDOWS\system32\shell32.dll,14   ;Set custom Script icon
+
+
+	global AppGui := "app"
+	Gui, app: Font, s11
+	Gui, app: Add, Text,, _______________ Choose Wisely ________________
+	Gui, app: Color, c3e0ca, Black        
+	Gui, app: Add, Button, x10 y50 w100 h35  gImp, IMP
+	Gui, app: Add, Button, x115 y50 w120 h35  gWrp, WRP
+	Gui, app: Add, Button, x240 y50 w120 h35  gReps, REPS
+	Gui, app: Show, w370 h100, Kevin's App.Cheese
+	return
+
+	Form:
+	Gui, app: hide
+	#include L:\System\Form.ahk
+	return
+
+	Order:
+	Gui, app: hide
+	#include L:\System\Order.ahk
+	return
+	
+	Names:
+	Gui, app: hide
+	#include L:\System\Names.ahk
+	return
+
+;;once each script runs
+;;that script will finish by reopening this gui
+;;then you are able to run the other gui's without having to rerunning this script
