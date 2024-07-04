@@ -1,0 +1,157 @@
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+
+
+   if(!userInitials){
+	InputBox, userInitials, Get Initials,____Enter initials____,,150,150
+	userInitials := putIn(userInitials)
+	}
+	newDate:= false
+	Gui, 3: new, +AlwaysOnTop			
+	Gui, 3: Font, s11
+	Gui, 3: Add, Text,, __________ Choose Wisely __________
+	Gui, 3: Color, c3e0ca, Black        
+	Gui, 3: Add, Button, x15 y50 w100 h35  gToday, TODAY
+	Gui, 3: Add, Button, x130 y50 w120 h35  gCustomDate, CUSTOM DATE
+	Gui, 3: Show, w270 h100
+	return
+
+	  Today:
+	  Gui, 3: Submit, NoHide
+	  newDate := true
+	  Gui, 3: Destroy
+
+	  CustomDate:
+	  Gui, 3: Submit, Nohide
+	  Gui, 3: Destroy
+
+	if(!newDate){					;;check for custom date
+	    FormatTime, CurrDay, A_now, MM\ _ \yyyy
+	    Gui, 2: new, +AlwaysOnTop
+	    Gui, 2: Font, s12, Times Roman Numeral
+	    Gui, 2: Add, Text,, Choose a new Date:
+	    Gui, 2: Color, c3e0ca, White
+	    Gui, 2: Add, Edit, vDate ym, %CurrDay%
+	    Gui, 2: Add, Button, x80 y50 w90 h30  gSubmit, SUBMIT
+	    Gui, 2: Show,
+	    return
+	}
+	  SUBMIT:
+	  Gui, 2: Submit, NoHide
+	  Gui, 2: Destroy
+
+	sleep 50
+	send ^a 					
+	sleep 50
+	send ^c                      ;;copy entire page
+	sleep 50
+	send ^{f}
+	sleep 100 
+	send banana
+	sleep 100
+	send {esc}
+	clip = %clipboard%
+
+	if(RegExMatch(clip,"Individual[\r\n]+([^\r\n]+)",name))				;;redundant searches for account's name
+		name := SubStr(name, 13, StrLen(name)-2)
+	else{ 
+		RegExMatch(clip, "Account Name[\r\n]+([^\r\n]+)", name)
+		name := SubStr(name, 17, StrLen(name))
+	}
+
+	RegExMatch(clip, "\b[A-Z]{4}-\d{4}\b", ID)	;;find account's id
+
+	StringUpper, name, name, T
+
+	if(brokenInfo(name,ID))
+		return
+	FileAppend , 1, L:\Quality Systems\TechSupport\Kevin\AHK projects\Impedance Check AHK\imp count.txt,
+
+	createPDF(name, ID, newDate, date, userInitials, wdApp)
+
+	Gui, %AppGui%: Show		;;reopen app gui
+return
+
+
+putIn(userInitials){
+	initials := "n1,n2,n3...."
+	StringLower, userInitials, userInitials
+	if(RegExMatch(initials, userInitials) and userInitials){
+		return userInitials
+	}else{
+		InputBox, userInitials, Get Initials,  Your initial has not been found. Please try again!,,320,150
+		putIn(userInitials)
+	}
+return userInitials
+}
+
+setPDFPath(user){
+	initialArray := {n1:"name 1",n2:"name 2",n3:"name 3"}    ;;hashmap
+
+	userName := initialArray[user]
+
+	StringLower, user, user
+		FileDelete, C:\Users\%userName%\Desktop\Form.pdf				
+		FileMove, L:\System\Form.pdf, C:\Users\%userName%\Desktop\Form.pdf		;;replace old with new pdf
+
+return 
+}
+
+createPDF(fullName, ID, newDate, date, userInitials, wdApp){
+	FormatTime, CurrDate, A_now, MM\dd\yyyy
+
+	wdApp := ComObjCreate("Word.Application") 	;Create an instance of word
+	WdApp.Documents.Add
+	wdApp.Selection.Paragraphs.Format.Style := "heading 3"
+	wdApp.Selection.ParagraphFormat.LineSpacing := 20 
+	wdApp.Selection.Font.Bold := 1
+	wdApp.Selection.Font.Color := 0000
+	wdApp.Selection.Font.Size := 13
+	wdApp.Selection.Font.Name := "Times New Roman"
+
+	wdApp.ActiveDocument.Tables.Add(Range := wdApp.Selection.Range, NumRows := 1, NumColumns := 1)			;;create table in word
+	
+	_ := wdApp.Selection.Tables(1)
+	if(_.Style <> "Table Grid")
+	_.Style := "Table Grid"			
+
+	wdApp.Selection.InlineShapes.AddPicture("L:\System\Logo.png")			;;attach picture
+	wdApp.Selection.ParagraphFormat.Alignment := 0
+
+	wdApp.Selection.TypeText("`nName: " fullName)					;;insert text for the form
+	wdApp.Selection.TypeText("`nID:  "ID)									
+	if(newDate)
+		wdApp.Selection.TypeText("`nDate:  "CurrDate)
+	else
+		wdApp.Selection.TypeText("`nDate:  "date)
+	wdApp.Selection.TypeText("`nResults:  Pass`n")
+
+	wdApp.Selection.ParagraphFormat.LineSpacing := 15 
+	wdApp.Selection.Font.Bold := 0
+	wdApp.Selection.Font.Size := 12
+	wdApp.Selection.TypeText(fullName " Add Text here`n")
+	
+	wdApp.ActiveDocument.ExportAsFixedFormat("L:\System\Form.pdf",17,true,True,0,1,False)
+	sleep 400
+	wdApp.ActiveDocument.Close(False)
+	wdApp.quit()	
+	wdApp :=	      ;;setting ComObjCreate to nothing to remove temp word doc
+
+	setPDFPath(userInitials)
+	return
+}
+
+brokenInfo(name, ID){
+	if(!name or !ID){
+		MsgBox Something went wrong. Please try again.
+		Gui, %AppGui%: Show
+		wdApp.ActiveDocument.Close(False)
+		wdApp.quit()	
+		wdApp :=	;;setting ComObjCreate to nothing to remove temp word doc
+		return true
+	}
+return false
+}
+
