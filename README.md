@@ -1,4 +1,3 @@
-```markdown
 # **Kevin's AutoHotKey Application**
 
 ## **Overview**
