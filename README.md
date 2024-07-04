@@ -1,7 +1,7 @@
 ```markdown
-# Kevin's AutoHotKey Application
+# **Kevin's AutoHotKey Application**
 
-## Overview
+## **Overview**
 
 This application, built using AutoHotKey, is designed to streamline various tasks such as automating order forms, creating forms, and copying names. The application is divided into four main classes: `App`, `Auto-Order-Form`, `Auto-Form-Creator`, and `Auto-Copy-Names`.
 
