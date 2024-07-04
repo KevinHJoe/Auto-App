@@ -1,0 +1,157 @@
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+
+FileAppend , 1, L:\Quality Systems\TechSupport\Kevin\AHK projects\order AHK\order count.txt
+
+
+sleep 100
+send ^a 					;;get account info
+sleep 100
+send ^c
+sleep 100
+send ^f
+sleep 400
+send banana{esc}
+clip = %clipboard%
+sleep 600
+ComplaintNumber := ""
+
+RegExMatch(clip, "Mailing Address[\r\n]+([^\r\n]+)[\r\n]+([^\r\n]+)[\r\n]+([^\r\n]+)[\r\n]+([^\r\n]+)", address)		;;find address
+address := StrSplit(address, "United States")
+
+if(address4 = "United States"){													;;city, state, zip might be on 3rd line
+	RegExMatch(address3, "^.*?,", city)
+	RegExMatch(address3, ",.*", state)
+	RegExMatch(address3, "\d{5}\b", zip)
+	address1 .= " " address2	
+}
+else{
+	RegExMatch(address2, "^.*?,", city)
+	RegExMatch(address2, ",.*", state)
+	RegExMatch(address2, "\d{5}\b", zip)
+}
+state := SubStr(state, 3 , strlen(state)-7)
+city := SubStr(city, 1 , strlen(city)-1)
+
+if(RegExMatch(clip,"Individual[\r\n]+([^\r\n]+)",name))				;;redundant searches for account's name
+		name := SubStr(name, 13, StrLen(name)-2)
+	else{ 
+		RegExMatch(clip, "Account Name[\r\n]+([^\r\n]+)", name)
+		name := SubStr(name, 17, StrLen(name))
+	}
+
+RegExMatch(clip, "\d{3}\d{3}\d{4}\b", phone)											;;find phone
+RegExMatch(clip, "\b[A-Z]{4}-\d{4}\b", id)											;;find ID
+
+nameArr := StrSplit(name, " ")				;;split names into array
+lName := ""
+for index, value in nameArr{				;;loop to make first & last name
+	if(index = 1)					
+	  fName = % value			
+	else
+	  lName .= value " "				;;adds any extra names into last name
+}
+
+Send !{d}					;;get SF number
+Sleep 200
+Send ^{c}
+Sleep 300
+sf = %clipboard%
+sleep 300
+sf := StrSplit(sf, ["do not include this text 1","do not include this text 2"]) 
+sf := SubStr(sf[2],1,15)
+
+Gui, new, +AlwaysOnTop			
+Gui, Font, s12
+Gui, Add, Text,, Complaint Number:
+Gui, Add, Text,, Record ID:
+Gui, Add, Text,, account ID:
+Gui, Add, Text,, account's First Name:
+Gui, Add, Text,, account's Last Name:
+Gui, Add, Text,, Street Address:
+Gui, Add, Text,, City:
+Gui, Add, Text,, State:
+Gui, Add, Text,, Zip:
+Gui, Add, Text,, Phone:
+Gui, Add, Text,, RMA Number:
+Gui, Add, Text,, Part Number:
+
+Gui, Add, Edit, vComplaintNumber ym, %ComplaintNumber%			;;gui check each order slot before print
+Gui, Add, Edit, vRecordID, %sf%			
+Gui, Add, Edit, vpID, %id%						
+Gui, Add, Edit, vfName, %fName%
+Gui, Add, Edit, vlName, %lName%
+Gui, Add, Edit, vaddress1, %address1%
+Gui, Add, Edit, vcity, %city%
+Gui, Add, Edit, vstate, %state%
+Gui, Add, Edit, vzip, %zip%
+Gui, Add, Edit, vPhoneClip, %phone%
+Gui, Add, Edit, vRma, NORMA
+
+Gui, Add, DropDownList, vProduct, product1|product2|Return Box
+Gui, Add, Button, default, Submit 
+Gui, Show,, Order Tool
+return  
+ButtonSubmit:
+Gui, Submit
+
+if (Product = "Return Box")
+	Product := 10000037
+sleep 2000
+Gui, %AppGui%: Show
+return
+
+::.wp:: ;outputs the table from GUI macro							;;print order
+FormatTime, today,, dddd
+FormatTime, hour,, H
+
+Send, %ComplaintNumber% {tab} 
+Sleep 100
+Send, %sf% 
+Send {tab} 	
+Sleep 100
+Send, %id%			;account id
+Send {tab}
+Sleep 100
+Send, %fName% {tab} 
+Sleep 100
+Send, %lName% {tab} 
+Sleep 100
+SendRaw, %address1% 
+send {tab} 
+Sleep 100
+SendRaw, %city% 
+Send {tab} 
+Sleep 100
+Send, %state% {tab} 
+Sleep 100
+Send, %zip% {tab} 
+Sleep 100
+Send, %phone% {tab} 
+Sleep 100
+Send, %Rma%		
+Sleep, 150
+Send, {tab}
+Sleep, 2000
+if ((Rma = "NORMA") || (Product = "10000037"))
+	Send, {space}
+Send, {tab}
+if (hour >= 11 && hour < 14)  ;if it's after 11 and before 2
+	Send, Same
+if ((today = "Friday" && hour >= 14) || (today = "Saturday" && hour < 14)) ;if it's after 2pm on friday or before 2pm on saturday	 
+	Send, Weekend
+Sleep, 200
+Send, {tab}Fedex - 1
+Send, {tab}{tab}{enter}
+Sleep, 50
+Send, %Product%
+Send, {enter}
+Sleep, 700
+Send, {tab}{tab}
+if ((today = "Thursday" && hour > 14) || (today = "Friday" && hour < 14))
+	Send Please ship using Saturday delivery if available. Thanks{!}
+Sleep 200
+MsgBox, 100, , Pasta Complete, 1
+return
