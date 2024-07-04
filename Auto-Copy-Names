@@ -1,0 +1,143 @@
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+
+;;start()
+	sleep 50
+	send ^a 					
+	sleep 50
+	send ^c                                      ;;copy the entire page
+	sleep 50
+	send ^f
+	sleep 400
+	send banana{esc}
+	clip = %clipboard%
+	sleep 500
+	repNames := []
+	global coach
+	var := "BLANK"                              ;;starting point to find names
+	length := StrLen(var)
+	broken := 0
+
+	while(!InStr(var, "Account")){
+		broken++
+		if(InStr(var, "Asset"))					            ;;for accounts with card
+			break
+		needle := "\Q" . var . "\E[\r\n]+([^\r\n]+)"
+		RegExMatch(clip, needle, var)			        	;;get the next line
+		var := SubStr(var, length+3, StrLen(var))		;;trims the previous line
+		length := StrLen(var)	
+		if(dontInclude(var))				              	;;avoid adding these to array
+			continue
+		repNames.Push(trimName(var))		          	;;remove excess characters before adding to array
+		if(broken(broken))				                	;;reset program if something breaks
+			return	
+	}
+
+	clipboard(repNames)
+
+	Gui, ct: new, +AlwaysOnTop			
+	Gui, ct: Font, s11
+	Gui, ct: Color, c3e0ca, Black    
+	Gui, ct: Add, Button, x20 y50 w80 h30  gPrint. Print
+	Gui, ct: Add, Button, x200 y50 w80 h30  gExit, Exit
+	Gui, ct: Show
+	return
+
+	Print:
+	Gui, ct: Submit, Hide
+	for index, value in repNames{			;;print names after pressing print
+		Send % value
+		if(index < repNames.length())			;;pint comma 1 less times than amount of names
+			Send {,}{space}
+	}
+	Sleep 1000
+	Gui, ct: Show
+  	return
+
+	Exit:
+	Gui, ct: Submit, Nohide
+	Gui, ct: Destroy
+	Sleep 1000
+	Gui, %AppGui%: Show            ;;this will reopen the gui for the app. Posted in a different repository
+	return
+
+return
+
+trimName(name){
+
+	if(InStr(name, "Primary")){	
+		if(InStr(name, "Title 1")){
+			name := SubStr(name, 1 , StrLen(name)-37)
+			return trimSides(name)
+		}else{
+			name := SubStr(name, 1 , StrLen(name)-22)
+			return trimSides(name)
+		}
+	}else if(InStr(name, "Title 1")){
+		name := SubStr(name, 1 , StrLen(name)-21)
+		return trimSides(name)
+	}else{
+		name := SubStr(name, 1 , StrLen(name)-6)
+		return trimSides(name)
+	}
+
+}
+
+trimSides(name){
+	name := LTrim(name ,"`r`n")
+	return RTrim(name ,"`r`n")
+}
+
+
+dontInclude(var){
+
+	if(InStr(var, "title 2") and InStr(var, "Primary")){
+		coach := var
+		coach := SubStr(coach, 3 , StrLen(coach)-30)
+		return true
+	}else if(InStr(var, "title 2")){
+		coach := var
+		coach := SubStr(coach, 3 , StrLen(coach)-14)
+		return true
+	}
+	if(InStr(var, "Click") or InStr(var,"Account") or InStr(var,"Open") or InStr(var,"Asset"))
+		return true
+return false
+}
+
+broken(broken){	
+	if(broken < 15)
+		return false
+	
+	MsgBox Something went wrong. Please try again.
+	Gui, %AppGui%: Show
+	return true
+}
+
+clipboard(repNames){                  ;;copies names onto your clipboard
+	for index, value in repNames{
+		Clipboard := value
+		sleep 300
+	}
+return
+}
+
+
+
+
+
+--------email hotkey---------
+
+::.emailreps::                      
+i := 0
+for index, value in repNames{
+	sendRaw % value
+	Sleep 2500
+	if(i = 0){
+		send {tab}{tab}{enter}{tab}{tab}
+		i++
+	}
+}
+return
